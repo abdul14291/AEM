@@ -90,9 +90,9 @@
     - name: Unpack AEM JAR to Author and Publish directories
       shell: >-
         su {{ aem_cms_user }} -l -c
-        'java -jar {{ aem_cms_download_path }}/{{ aem_cms_quickstart_name }}
+        'java -jar {{ aem_jar_name }}/
         -unpack
-        -b {{ aem_cms_home }}'
+        -b {{ item.folder }}'
       # command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
       args:
         chdir: "{{user_provided_folder}}"
