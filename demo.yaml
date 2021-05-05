@@ -88,16 +88,17 @@
     #     state: directory
 
     - name: Unpack AEM JAR to Author and Publish directories
-      shell: >-
-        su {{ aem_cms_user }} -l -c
-        'java -jar {{ aem_jar_name }}/
-        -unpack
-        -b {{ item.folder }}'
+      # shell: >-
+      #   su {{ aem_cms_user }} -l -c
+      #   'java -jar {{ aem_jar_name }}/
+      #   -unpack
+      #   -b {{ item.folder }}'
+      command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}"
       # command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
       args:
         chdir: "{{user_provided_folder}}"
         creates: "{{item.folder}}/crx-quickstart"
-      # with_items: 
+      with_items: ["{{publish_folder}}", "{{author_folder}}"]
       #   - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
       #   - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
 
