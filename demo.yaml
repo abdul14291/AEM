@@ -6,15 +6,15 @@
     aem_jar_name: "cq64-author-p4502.jar" # The AEM JAR file name in /user-provided
     # The dispatcher module file name in /user-provided.
     # Make sure you have the uncompressed `.so` file in /user-provided (not the zipped `.gz` file)
-    # dispatcher_module_name: "dispatcher-apache2.4-4.2.3.so"
-    # aem_publish_runmodes: publish,samplecontent
-    # aem_author_runmodes: author,samplecontent
+    dispatcher_module_name: "dispatcher-apache2.4-4.2.3.so"
+    aem_publish_runmodes: publish,samplecontent
+    aem_author_runmodes: author,samplecontent
 
     # Ports on VM
     # NOTE: To change ports on your localhost, change them in Vagrantfile
     aem_author_port: 4602
     aem_publish_port: 4603
-    # aem_dispatcher_port: 4604
+    aem_dispatcher_port: 4604
     
     # Configurations that may or may not need to be modified somewhere else :)
     # Absolute paths to AEM folders on the VM
@@ -24,10 +24,10 @@
     service_path: /usr/lib/systemd/system
 
   # Handlers
-  # handlers:
-  #   # Restart apache, needed for when we make changes to apache files
-  #   - name: restart apache
-  #     service: name=httpd state=restarted
+  handlers:
+    # Restart apache, needed for when we make changes to apache files
+    - name: restart apache
+      service: name=httpd state=restarted
   # Ansible tasks
   tasks:
 
@@ -36,42 +36,42 @@
     # for adobe's solution, see section "Apache Web Server - Configure SELinux Properties"
     # of https://helpx.adobe.com/experience-manager/dispatcher/using/dispatcher-install.html
     # Note: this runs the first time you setup your VM, subsequesnt provesions do not run this task.
-    # - name: Disable SELinux
-    #   selinux: state=disabled
-    #   register: disable_selinux_result
+    - name: Disable SELinux
+      selinux: state=disabled
+      register: disable_selinux_result
     
     # # Reboot ONLY if Disable SELinux task was changed (only first time)
-    # - name: Restarting VM (only runs when SELinux task is changed)
-    #   shell: "sleep 5 && reboot"
-    #   async: 1
-    #   poll: 0
-    #   when: disable_selinux_result is changed
+    - name: Restarting VM (only runs when SELinux task is changed)
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+      when: disable_selinux_result is changed
 
-    # - name: Wait for the reboot to complete if there was a change.
-    #   wait_for_connection: connect_timeout=20 sleep=5 delay=5 timeout=300
-    #   when: disable_selinux_result is changed
+    - name: Wait for the reboot to complete if there was a change.
+      wait_for_connection: connect_timeout=20 sleep=5 delay=5 timeout=300
+      when: disable_selinux_result is changed
 
-    # # https://go-repo.io/
-    # - name: Install Go (for tailon server)
-    #   shell: |
-    #     rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO
-    #     curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo
-    #     exit 0
-    #   args:
-    #     executable: /bin/bash
-    #     warn: false # Ansible prints a warning about using yum, blah blah blah... not interested =)
+    # https://go-repo.io/
+    - name: Install Go (for tailon server)
+      shell: |
+        rpm --import https://mirror.go-repo.io/centos/RPM-GPG-KEY-GO-REPO
+        curl -s https://mirror.go-repo.io/centos/go-repo.repo | tee /etc/yum.repos.d/go-repo.repo
+        exit 0
+      args:
+        executable: /bin/bash
+        warn: false # Ansible prints a warning about using yum, blah blah blah... not interested =)
 
-    # - name: Install dependencies [nano, java, httpd, golang, git]
-    #   yum: name="nano, java, httpd, golang, git" state=latest
+    - name: Install dependencies [nano, java, httpd, golang, git]
+      yum: name="nano, java, httpd, golang, git" state=latest
 
     # Some OS's have smaller limit of number of concurrent open files.
     # AEM opens a lot of files, so we max that limit here
-    # - name: Set open file limit for all users
-    #   pam_limits: domain=* limit_type=hard limit_item=nofile value=64000
+    - name: Set open file limit for all users
+      pam_limits: domain=* limit_type=hard limit_item=nofile value=64000
 
     # - name: Author Directory
     #   file:
-    #     path: /aem/aem-author
+    #     path: /aem/aem-author-new
     #     owner: root
     #     group: root
     #     mode: 0755
@@ -80,27 +80,31 @@
 
     # - name: Publish Directory
     #   file:
-    #     path: /aem/aem-public
+    #     path: /aem/aem-public-new
     #     owner: root
     #     group: root
     #     mode: 0755
     #     recurse: yes
     #     state: directory
 
+    # - name: Unpack AEM JAR to Author directories
+    #   ansible.builtin.unarchive:
+    #   src: /user-provided
+    #   dest: /aem/aem-author
+
+    # - name: Unpack AEM JAR to Publish directories
+    #   ansible.builtin.unarchive:
+    #   src: /user-provided
+    #   dest: /aem/aem-public
     - name: Unpack AEM JAR to Author and Publish directories
-      # shell: >-
-      #   su {{ aem_cms_user }} -l -c
-      #   'java -jar {{ aem_jar_name }}/
-      #   -unpack
-      #   -b {{ item.folder }}'
-      command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}"
-      # command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
+      # command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}"
+      command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
       args:
         chdir: "{{user_provided_folder}}"
         creates: "{{item.folder}}/crx-quickstart"
       with_items: ["{{publish_folder}}", "{{author_folder}}"]
-      #   - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
-      #   - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
+        - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
+        - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
 
     - name: Copy license file to author and publish locations
       command: cp {{user_provided_folder}}/license.properties {{item}}
@@ -110,12 +114,12 @@
       with_items: ["{{publish_folder}}", "{{author_folder}}"]
 
 
-    # - name: Install systemd service for Author and Publish
-    #   template: 
-    #     src: services/{{item}}.service
-    #     dest: /usr/lib/systemd/system/{{item}}.service
-    #     mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
-    #   with_items: [aem-publish, aem-author, tailon]
+    - name: Install systemd service for Author and Publish
+      template: 
+        src: services/{{item}}.service
+        dest: /usr/lib/systemd/system/{{item}}.service
+        mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
+      with_items: [aem-publish, aem-author, tailon]
 
     - name: Start the systemd AEM deamon for author and publish
       systemd: name="{{item}}.service" state=started enabled=yes daemon_reload=yes no_block=yes
@@ -124,25 +128,25 @@
       with_items: [aem-publish, aem-author]
 
 
-    # - name: Copy dispatcher module to apache
-    #   tags: aem_dispatcher
-    #   copy: src="user-provided/{{dispatcher_module_name}}" dest="/etc/httpd/modules/mod_dispatcher.so"
-      # notify:
-      #   - restart apache
+    - name: Copy dispatcher module to apache
+      tags: aem_dispatcher
+      copy: src="user-provided/{{dispatcher_module_name}}" dest="/etc/httpd/modules/mod_dispatcher.so"
+      notify:
+        - restart apache
 
-    # here, we copy 
-    # - name: Configure Dispatcher
-    #   tags: aem_dispatcher
-    #   template: 
-    #     src: dispatcher/{{item.name}}
-    #     dest: /etc/httpd/{{item.rePath}}
-    #     # mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
-    #   notify:
-    #     - restart apache
-    #   with_items:
-    #     - { name: 00-dispatcher.conf, rePath: conf.modules.d/00-dispatcher.conf }
-    #     - { name: dispatcher.conf,    rePath: conf.d/dispatcher.conf }
-    #     - { name: dispatcher.any,     rePath: conf/dispatcher.any    }
+    here, we copy 
+    - name: Configure Dispatcher
+      tags: aem_dispatcher
+      template: 
+        src: dispatcher/{{item.name}}
+        dest: /etc/httpd/{{item.rePath}}
+        # mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
+      notify:
+        - restart apache
+      with_items:
+        - { name: 00-dispatcher.conf, rePath: conf.modules.d/00-dispatcher.conf }
+        - { name: dispatcher.conf,    rePath: conf.d/dispatcher.conf }
+        - { name: dispatcher.any,     rePath: conf/dispatcher.any    }
 
     - name: Waiting for AEM author to bind to port
       tags: aem_author
@@ -151,23 +155,23 @@
     - name: Waiting for AEM publish to bind to port
       wait_for: port={{aem_publish_port}}
 
-    # - name: Install tailon
-    #   tags: tailon
-    #   copy: src="binaries/tailon/tailon" dest="/usr/bin/tailon"
+    - name: Install tailon
+      tags: tailon
+      copy: src="binaries/tailon/tailon" dest="/usr/bin/tailon"
     
-    # - name: Install systemd service for Tailon
-    #   tags: tailon
-    #   template: 
-    #     src: services/tailon.service
-    #     dest: /usr/lib/systemd/system/tailon.service
-    #     mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
+    - name: Install systemd service for Tailon
+      tags: tailon
+      template: 
+        src: services/tailon.service
+        dest: /usr/lib/systemd/system/tailon.service
+        mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
     
-    # - name: Changing perm of "/usr/bin/tailon", adding "+x"
-    #   tags: tailon
-    #   file: dest=/usr/bin/tailon mode=01777 # dev box, remember :)
+    - name: Changing perm of "/usr/bin/tailon", adding "+x"
+      tags: tailon
+      file: dest=/usr/bin/tailon mode=01777 # dev box, remember :)
 
-    # # for now, this service only starts tailon serever
-    # - name: Start the systemd AEM deamon for tailon 4605
-    #   tags: tailon
-    #   systemd: name="tailon.service" state=restarted enabled=yes daemon_reload=yes no_block=yes
-    #   async: 0s
+    # for now, this service only starts tailon serever
+    - name: Start the systemd AEM deamon for tailon 4605
+      tags: tailon
+      systemd: name="tailon.service" state=restarted enabled=yes daemon_reload=yes no_block=yes
+      async: 0s
