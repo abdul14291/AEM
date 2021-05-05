@@ -88,13 +88,18 @@
     #     state: directory
 
     - name: Unpack AEM JAR to Author and Publish directories
-      command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
+      shell: >-
+        su {{ aem_cms_user }} -l -c
+        'java -jar {{ aem_cms_download_path }}/{{ aem_cms_quickstart_name }}
+        -unpack
+        -b {{ aem_cms_home }}'
+      # command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
       args:
         chdir: "{{user_provided_folder}}"
         creates: "{{item.folder}}/crx-quickstart"
-      with_items: 
-        - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
-        - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
+      # with_items: 
+      #   - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
+      #   - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
 
     - name: Copy license file to author and publish locations
       command: cp {{user_provided_folder}}/license.properties {{item}}
