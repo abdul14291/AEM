@@ -18,9 +18,9 @@
     
     # Configurations that may or may not need to be modified somewhere else :)
     # Absolute paths to AEM folders on the VM
-    author_folder: /aem/aem-author
-    publish_folder: /aem/aem-publish
-    # user_provided_folder: /home/vagrant/user-provided
+    author_folder: /aem/aem-author-new
+    publish_folder: /aem/aem-publish-new
+    user_provided_folder: /user-provided-new
     service_path: /usr/lib/systemd/system
 
   # Handlers
@@ -92,9 +92,9 @@
       args:
         chdir: "{{user_provided_folder}}"
         creates: "{{item.folder}}/crx-quickstart"
-      with_items: ["{{publish_folder}}", "{{author_folder}}"]
-        # - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
-        # - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
+      with_items: 
+        - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
+        - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
 
     - name: Copy license file to author and publish locations
       command: cp {{user_provided_folder}}/license.properties {{item}}
