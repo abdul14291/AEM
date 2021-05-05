@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: localhost
 
   vars:
     # CONFIGURE THIS:
@@ -92,9 +92,9 @@
       args:
         chdir: "{{user_provided_folder}}"
         creates: "{{item.folder}}/crx-quickstart"
-      with_items:
-        - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
-        - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
+      with_items: ["{{publish_folder}}", "{{author_folder}}"]
+        # - { folder: "{{publish_folder}}", runmode: "{{aem_publish_runmodes}}" }
+        # - { folder: "{{author_folder}}",  runmode: "{{aem_author_runmodes}}" }
 
     - name: Copy license file to author and publish locations
       command: cp {{user_provided_folder}}/license.properties {{item}}
