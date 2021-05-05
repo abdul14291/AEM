@@ -1,0 +1,7 @@
+[Unit]
+Description="Tailon Service"
+
+[Service]
+ExecStart=/usr/bin/tailon "alias=author,group=Author Logs,{{author_folder}}/crx-quickstart/logs/*.log" "alias=publish,group=Publish Logs,{{publish_folder}}/crx-quickstart/logs/*.log" "alias=dispatcher,group=Dispatcher Logs,/etc/httpd/logs/*"
+Type=simple
+RemainAfterExit=yes
