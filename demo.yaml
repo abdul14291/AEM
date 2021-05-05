@@ -3,7 +3,7 @@
 
   vars:
     # CONFIGURE THIS:
-    aem_jar_name: "cq64-author-p4502" # The AEM JAR file name in /user-provided
+    aem_jar_name: "cq64-author-p4502.jar" # The AEM JAR file name in /user-provided
     # The dispatcher module file name in /user-provided.
     # Make sure you have the uncompressed `.so` file in /user-provided (not the zipped `.gz` file)
     # dispatcher_module_name: "dispatcher-apache2.4-4.2.3.so"
@@ -69,6 +69,24 @@
     # - name: Set open file limit for all users
     #   pam_limits: domain=* limit_type=hard limit_item=nofile value=64000
 
+    # - name: Author Directory
+    #   file:
+    #     path: /aem/aem-author
+    #     owner: root
+    #     group: root
+    #     mode: 0755
+    #     recurse: yes
+    #     state: directory
+
+    # - name: Publish Directory
+    #   file:
+    #     path: /aem/aem-public
+    #     owner: root
+    #     group: root
+    #     mode: 0755
+    #     recurse: yes
+    #     state: directory
+
     - name: Unpack AEM JAR to Author and Publish directories
       command: java -jar {{aem_jar_name}} -unpack -b "{{item.folder}}" -quickstart.server.port {{aem_publish_port}} -r {{item.runmode}}
       args:
@@ -86,12 +104,12 @@
       with_items: ["{{publish_folder}}", "{{author_folder}}"]
 
 
-    - name: Install systemd service for Author and Publish
-      template: 
-        src: services/{{item}}.service
-        dest: /usr/lib/systemd/system/{{item}}.service
-        mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
-      with_items: [aem-publish, aem-author, tailon]
+    # - name: Install systemd service for Author and Publish
+    #   template: 
+    #     src: services/{{item}}.service
+    #     dest: /usr/lib/systemd/system/{{item}}.service
+    #     mode: u=rwx,g=rwx,o=rwx # dev box, remember :)
+    #   with_items: [aem-publish, aem-author, tailon]
 
     - name: Start the systemd AEM deamon for author and publish
       systemd: name="{{item}}.service" state=started enabled=yes daemon_reload=yes no_block=yes
@@ -100,9 +118,9 @@
       with_items: [aem-publish, aem-author]
 
 
-    - name: Copy dispatcher module to apache
-      tags: aem_dispatcher
-      copy: src="user-provided/{{dispatcher_module_name}}" dest="/etc/httpd/modules/mod_dispatcher.so"
+    # - name: Copy dispatcher module to apache
+    #   tags: aem_dispatcher
+    #   copy: src="user-provided/{{dispatcher_module_name}}" dest="/etc/httpd/modules/mod_dispatcher.so"
       # notify:
       #   - restart apache
 
