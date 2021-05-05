@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: localhost
 
   vars:
     # CONFIGURE THIS:
@@ -40,7 +40,7 @@
       selinux: state=disabled
       register: disable_selinux_result
     
-    # # Reboot ONLY if Disable SELinux task was changed (only first time)
+    # Reboot ONLY if Disable SELinux task was changed (only first time)
     - name: Restarting VM (only runs when SELinux task is changed)
       shell: "sleep 5 && reboot"
       async: 1
@@ -134,7 +134,7 @@
       notify:
         - restart apache
 
-    here, we copy 
+    # here, we copy 
     - name: Configure Dispatcher
       tags: aem_dispatcher
       template: 
